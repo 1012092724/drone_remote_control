@@ -1,5 +1,7 @@
 #include "App_DataProcess.h"
 
+JoyStickBias_Struct JoyStickBias;
+
 /* 均值滤波(滑动窗口) */
 #define MEAN_FILTER(filter, valuePointer)             \
     filter.sum -= filter.values[filter.index];        \
@@ -8,17 +10,16 @@
     filter.index  = (filter.index + 1) % FILTER_SIZE; \
     *valuePointer = filter.sum / FILTER_SIZE
 
-JoyStickBias_Struct JoyStickBias;
 /**
  * @description: 摇杆和按键数据处理模块启动
  * @return {*}
  */
-void App_DataProcess_Start(void)
-{
-    Int_JoyStick_Init();
-    Int_JoyStick_Scan();
-    debug_printfln("JoyStick & Key Data Process Start!");
-}
+// void App_DataProcess_Start(void)
+// {
+//     Int_JoyStick_Init();
+//     Int_JoyStick_Scan();
+//     debug_printfln("JoyStick Data Process Start!");
+// }
 
 /**
  * @description: 摇杆极性数据处理

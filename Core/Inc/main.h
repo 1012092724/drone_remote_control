@@ -73,6 +73,12 @@ void Error_Handler(void);
 #define KEY_DOWN_GPIO_Port GPIOB
 #define POWER_KEY_Pin GPIO_PIN_15
 #define POWER_KEY_GPIO_Port GPIOB
+#define SI24R1_CS_Pin GPIO_PIN_15
+#define SI24R1_CS_GPIO_Port GPIOA
+#define SI24R1_IRQ_Pin GPIO_PIN_6
+#define SI24R1_IRQ_GPIO_Port GPIOB
+#define SI24R1_EN_Pin GPIO_PIN_7
+#define SI24R1_EN_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

@@ -53,10 +53,16 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(POWER_KEY_GPIO_Port, POWER_KEY_Pin, GPIO_PIN_SET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SI24R1_CS_GPIO_Port, SI24R1_CS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SI24R1_EN_GPIO_Port, SI24R1_EN_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : KEY_LEFT_X_Pin KEY_RIGHT_X_Pin KEY_UP_Pin KEY_RIGHT_Pin
-                           KEY_LEFT_Pin KEY_DOWN_Pin */
+                           KEY_LEFT_Pin KEY_DOWN_Pin SI24R1_IRQ_Pin */
   GPIO_InitStruct.Pin = KEY_LEFT_X_Pin|KEY_RIGHT_X_Pin|KEY_UP_Pin|KEY_RIGHT_Pin
-                          |KEY_LEFT_Pin|KEY_DOWN_Pin;
+                          |KEY_LEFT_Pin|KEY_DOWN_Pin|SI24R1_IRQ_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -67,6 +73,20 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(POWER_KEY_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : SI24R1_CS_Pin */
+  GPIO_InitStruct.Pin = SI24R1_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SI24R1_CS_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : SI24R1_EN_Pin */
+  GPIO_InitStruct.Pin = SI24R1_EN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SI24R1_EN_GPIO_Port, &GPIO_InitStruct);
 
 }
 

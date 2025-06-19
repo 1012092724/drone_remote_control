@@ -5,8 +5,6 @@
 #include "Com_Config.h"
 #include "adc.h"
 
-extern JoyStick_Struct joyStick;
-
 void Int_JoyStick_Init(void);
 void Int_JoyStick_Scan(void);
 

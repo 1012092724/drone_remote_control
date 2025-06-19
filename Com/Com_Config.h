@@ -5,16 +5,16 @@
 #include "main.h"
 
 /* 0. 定义通讯的帧头 */
-#define FRAME_0 0xAA
-#define FRAME_1 0xAF
-#define FRAME_2 0x03
+#define FRAME_0 0x20
+#define FRAME_1 0x02
+#define FRAME_2 0x26
 
 /* 1. 通用状态枚举类型 */
 typedef enum {
-    Common_OK = 0,
-    Common_ERROR,
-    Common_OTHER
-} Common_Status;
+    Com_OK = 0,
+    Com_ERROR,
+    Com_OTHER
+} Com_Status;
 
 /* 2. 遥感和按键数据封装结构体  */
 typedef struct
@@ -35,5 +35,7 @@ typedef struct
     int16_t ROLBias; /* 横滚 偏差*/
     int16_t PITBias; /* 俯仰 偏差*/
 } JoyStickBias_Struct;
+
+extern JoyStick_Struct joyStick;
 
 #endif /* __COM_CONFIG_H__ */

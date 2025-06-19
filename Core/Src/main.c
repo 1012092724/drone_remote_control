@@ -20,6 +20,7 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
+#include "spi.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -92,10 +93,11 @@ int main(void)
     MX_DMA_Init();
     MX_USART1_UART_Init();
     MX_ADC1_Init();
+    MX_SPI1_Init();
     /* USER CODE BEGIN 2 */
     // =============================测试========================== //
     // 启动所有任务
-    Sart_ALL_Task();
+    APP_Sart_ALL_Task();
     /* USER CODE END 2 */
 
     /* Infinite loop */
