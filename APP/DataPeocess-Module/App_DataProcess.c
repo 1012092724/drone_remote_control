@@ -14,12 +14,12 @@ JoyStickBias_Struct JoyStickBias;
  * @description: 摇杆和按键数据处理模块启动
  * @return {*}
  */
-// void App_DataProcess_Start(void)
-// {
-//     Int_JoyStick_Init();
-//     Int_JoyStick_Scan();
-//     debug_printfln("JoyStick Data Process Start!");
-// }
+void App_DataProcess_Init(void)
+{
+    Int_JoyStick_Init();
+    Int_JoyStick_Scan();
+    debug_printfln("JoyStick Data Process Start!");
+}
 
 /**
  * @description: 摇杆极性数据处理
@@ -154,95 +154,103 @@ void App_DataProcess_KeyDataProcess(void)
      3. 左上按键长按远程关闭飞控
      4. 上下左右按键对摇杆进行微调
   */
-    KeyEvent keyevent;
-    if (xQueueReceive(xKeyEventQueue, &keyevent, portMAX_DELAY) == pdPASS) {
-        switch (keyevent.event) {
-            case KEY_EVENT_DOWN: // 按键按下(瞬时事件)
-                switch (keyevent.key_id) {
-                    case KEY_ID_LEFT_X:
-                        break;
-                    case KEY_ID_RIGHT_X:
-                        break;
-                    case KEY_ID_LEFT:
-                        break;
-                    case KEY_ID_RIGHT:
-                        break;
-                    case KEY_ID_UP:
-                        break;
-                    case KEY_ID_DOWN:
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case KEY_EVENT_SHORT_RELEASE: // 短按释放事件 (<500ms)
-                switch (keyevent.key_id) {
-                    case KEY_ID_LEFT_X:
-                        break;
-                    case KEY_ID_RIGHT_X:
-                        joyStick.isFixHeightPoint = !joyStick.isFixHeightPoint; // 短按释放 右上按键 启动定高飞行
-                        break;
-                    case KEY_ID_LEFT:
-                        JoyStickBias.YAWBias -= 1; // 短按释放 左按键 加偏航角
-                        break;
-                    case KEY_ID_RIGHT:
-                        JoyStickBias.ROLBias -= 1; // 短按释放 右按键 加滚转角
-                        break;
-                    case KEY_ID_UP:
-                        JoyStickBias.PITBias -= 1; // 短按释放 上按键 加俯仰角
-                        break;
-                    case KEY_ID_DOWN:
-                        JoyStickBias.THRBias -= 1; // 短按释放 下按键 加油门
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case KEY_EVENT_LONG_HOLD: // 长按持续事件 (周期性触发)
-                switch (keyevent.key_id) {
-                    case KEY_ID_LEFT_X:
-                        joyStick.isPowerDonw = 1; // 持续长按 左上按键 远程关闭飞控
-                        break;
-                    case KEY_ID_RIGHT_X:
-                        break;
-                    case KEY_ID_LEFT:
-                        JoyStickBias.YAWBias += 1; // 持续长按 左按键 减偏航角
-                        break;
-                    case KEY_ID_RIGHT:
-                        JoyStickBias.ROLBias += 1; // 持续长按 右按键 减滚转角
-                        break;
-                    case KEY_ID_UP:
-                        JoyStickBias.PITBias += 1; // 持续长按 上按键 减俯仰角
-                        break;
-                    case KEY_ID_DOWN:
-                        JoyStickBias.THRBias += 1; // 持续长按 下按键 减油门
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case KEY_EVENT_LONG_RELEASE: // 长按释放事件 (≥500ms)
-                switch (keyevent.key_id) {
-                    case KEY_ID_LEFT_X:
-                        joyStick.isPowerDonw = 0; // 长按释放 左上按键 恢复关闭飞控命令初始值
-                        break;
-                    case KEY_ID_RIGHT_X:
-                        App_DataProcess_JoyStickCalcBias(); // 长按释放 右上按键 进行校准
-                        break;
-                    case KEY_ID_LEFT:
-                        break;
-                    case KEY_ID_RIGHT:
-                        break;
-                    case KEY_ID_UP:
-                        break;
-                    case KEY_ID_DOWN:
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            default:
-                break;
-        }
+    // 设置任务接收句柄
+    if (xReceiverTask == NULL) {
+        Int_Key_SetReceiverTask(xTaskGetCurrentTaskHandle());
+    }
+
+    // 等待按键通知（无超时）
+    uint32_t ulNotifiedValue;
+    xTaskNotifyWait(0, ULONG_MAX, &ulNotifiedValue, portMAX_DELAY);
+    // 解码按键ID和事件类型
+    KeyID id              = (KeyID)((ulNotifiedValue >> 3) & 0x07);
+    KeyEventType keyevent = (KeyEventType)(ulNotifiedValue & 0x07);
+    switch (keyevent) {
+        case KEY_EVENT_DOWN: // 按键按下(瞬时事件)
+            switch (id) {
+                case KEY_ID_LEFT_X:
+                    break;
+                case KEY_ID_RIGHT_X:
+                    break;
+                case KEY_ID_LEFT:
+                    break;
+                case KEY_ID_RIGHT:
+                    break;
+                case KEY_ID_UP:
+                    break;
+                case KEY_ID_DOWN:
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case KEY_EVENT_SHORT_RELEASE: // 短按释放事件 (<500ms)
+            switch (id) {
+                case KEY_ID_LEFT_X:
+                    break;
+                case KEY_ID_RIGHT_X:
+                    joyStick.isFixHeightPoint = !joyStick.isFixHeightPoint; // 短按释放 右上按键 启动定高飞行
+                    break;
+                case KEY_ID_LEFT:
+                    JoyStickBias.YAWBias -= 1; // 短按释放 左按键 加偏航角
+                    break;
+                case KEY_ID_RIGHT:
+                    JoyStickBias.ROLBias -= 1; // 短按释放 右按键 加滚转角
+                    break;
+                case KEY_ID_UP:
+                    JoyStickBias.PITBias -= 1; // 短按释放 上按键 加俯仰角
+                    break;
+                case KEY_ID_DOWN:
+                    JoyStickBias.THRBias -= 1; // 短按释放 下按键 加油门
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case KEY_EVENT_LONG_HOLD: // 长按持续事件 (周期性触发)
+            switch (id) {
+                case KEY_ID_LEFT_X:
+                    joyStick.isPowerDonw = 1; // 持续长按 左上按键 远程关闭飞控
+                    break;
+                case KEY_ID_RIGHT_X:
+                    break;
+                case KEY_ID_LEFT:
+                    JoyStickBias.YAWBias += 1; // 持续长按 左按键 减偏航角
+                    break;
+                case KEY_ID_RIGHT:
+                    JoyStickBias.ROLBias += 1; // 持续长按 右按键 减滚转角
+                    break;
+                case KEY_ID_UP:
+                    JoyStickBias.PITBias += 1; // 持续长按 上按键 减俯仰角
+                    break;
+                case KEY_ID_DOWN:
+                    JoyStickBias.THRBias += 1; // 持续长按 下按键 减油门
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case KEY_EVENT_LONG_RELEASE: // 长按释放事件 (≥500ms)
+            switch (id) {
+                case KEY_ID_LEFT_X:
+                    joyStick.isPowerDonw = 0; // 长按释放 左上按键 恢复关闭飞控命令初始值
+                    break;
+                case KEY_ID_RIGHT_X:
+                    App_DataProcess_JoyStickCalcBias(); // 长按释放 右上按键 进行校准
+                    break;
+                case KEY_ID_LEFT:
+                    break;
+                case KEY_ID_RIGHT:
+                    break;
+                case KEY_ID_UP:
+                    break;
+                case KEY_ID_DOWN:
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
     }
 }

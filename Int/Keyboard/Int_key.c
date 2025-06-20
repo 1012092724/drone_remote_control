@@ -1,26 +1,26 @@
 #include "Int_key.h"
 
-// 创建事件队列（全局）
-QueueHandle_t xKeyEventQueue = NULL;
+// 接收任务句柄
+TaskHandle_t xReceiverTask = NULL;
 
-// 按键状态机状态定义
+// 按键状态机状态定义（压缩为2bit）
 typedef enum {
-    KEY_STATE_RELEASED,  // 释放状态
-    KEY_STATE_DEBOUNCE,  // 消抖中（20ms）
-    KEY_STATE_PRESSED,   // 稳定按下
-    KEY_STATE_LONG_PRESS // 长按触发
+    KEY_STATE_RELEASED,
+    KEY_STATE_DEBOUNCE,
+    KEY_STATE_PRESSED,
+    KEY_STATE_LONG_PRESS
 } KeyState;
 
-// 单个按键的运行时状态
+// 优化后的按键运行时结构体（节省4字节/按键）
 typedef struct {
-    GPIO_TypeDef *port;    // 按键GPIO端口（如 KEY_LEFT_X_GPIO_Port）
-    uint16_t pin;          // 按键GPIO引脚（如 KEY_LEFT_X_Pin）
-    KeyState state;        // 当前状态
-    TickType_t press_time; // 按下时刻时间戳
+    GPIO_TypeDef *port;
+    uint16_t pin;
+    uint8_t state : 2; // 使用位域
+    uint32_t press_time;
 } KeyRuntime;
 
 // 初始化所有按键状态
-static KeyRuntime keys[KEY_ID_COUNT] = {
+KeyRuntime keys[KEY_ID_COUNT] = {
     {KEY_LEFT_X_GPIO_Port, KEY_LEFT_X_Pin, KEY_STATE_RELEASED, 0},
     {KEY_RIGHT_X_GPIO_Port, KEY_RIGHT_X_Pin, KEY_STATE_RELEASED, 0},
     {KEY_UP_GPIO_Port, KEY_UP_Pin, KEY_STATE_RELEASED, 0},
@@ -28,60 +28,63 @@ static KeyRuntime keys[KEY_ID_COUNT] = {
     {KEY_LEFT_GPIO_Port, KEY_LEFT_Pin, KEY_STATE_RELEASED, 0},
     {KEY_RIGHT_GPIO_Port, KEY_RIGHT_Pin, KEY_STATE_RELEASED, 0}};
 
-void Int_Key_Init(void)
+void Int_Key_SetReceiverTask(TaskHandle_t xTaskHandle)
 {
-    xKeyEventQueue = xQueueCreate(20, sizeof(KeyEvent)); // 队列深度20
+    xReceiverTask = xTaskHandle;
 }
 
-// 发送事件到队列（非阻塞）
-void sendKeyEvent(KeyID id, KeyEventType event_type)
+// 发送事件通过任务通知
+static void sendKeyEvent(KeyID id, KeyEventType event_type)
 {
-    KeyEvent event = {id, event_type};
-    xQueueSend(xKeyEventQueue, &event, 0); // 立即发送，不阻塞
+    if (xReceiverTask != NULL) {
+        // 将按键ID和事件类型编码到通知值中
+        uint32_t notify_value = (id << 3) | (event_type & 0x07);
+        xTaskNotifyFromISR(xReceiverTask,
+                           notify_value,
+                           eSetValueWithOverwrite,
+                           NULL);
+    } else {
+        debug_printfln("xReceiverTask is NULL");
+    }
 }
-
-// 处理按键状态
-void processKeyState(KeyRuntime *key, KeyID id, GPIO_PinState pin_state)
+// 优化后的状态处理函数
+static void processKeyState(KeyRuntime *key, KeyID id, GPIO_PinState pin_state)
 {
-    TickType_t now = xTaskGetTickCount();
+    TickType_t now          = xTaskGetTickCount();
+    uint32_t press_duration = now - key->press_time;
 
     switch (key->state) {
         case KEY_STATE_RELEASED:
-            if (pin_state == GPIO_PIN_RESET) { // 检测到按下
+            if (pin_state == GPIO_PIN_RESET) {
                 key->state      = KEY_STATE_DEBOUNCE;
                 key->press_time = now;
             }
             break;
 
         case KEY_STATE_DEBOUNCE:
-            if (now - key->press_time > pdMS_TO_TICKS(20)) {
-                if (pin_state == GPIO_PIN_RESET) { // 确认有效按下
-                    key->state = KEY_STATE_PRESSED;
+            if (press_duration > pdMS_TO_TICKS(20)) {
+                key->state = (pin_state == GPIO_PIN_RESET) ? KEY_STATE_PRESSED : KEY_STATE_RELEASED;
+                if (key->state == KEY_STATE_PRESSED)
                     sendKeyEvent(id, KEY_EVENT_DOWN);
-                } else {
-                    key->state = KEY_STATE_RELEASED; // 抖动忽略
-                }
             }
             break;
 
         case KEY_STATE_PRESSED:
-            if (pin_state == GPIO_PIN_SET) { // 释放
+            if (pin_state == GPIO_PIN_SET) {
                 key->state = KEY_STATE_RELEASED;
-                if (now - key->press_time < pdMS_TO_TICKS(500)) {
-                    sendKeyEvent(id, KEY_EVENT_SHORT_RELEASE);
-                }
-            } else if (now - key->press_time > pdMS_TO_TICKS(500)) {
+                sendKeyEvent(id, (press_duration < pdMS_TO_TICKS(500)) ? KEY_EVENT_SHORT_RELEASE : KEY_EVENT_LONG_RELEASE);
+            } else if (press_duration > pdMS_TO_TICKS(500)) {
                 key->state = KEY_STATE_LONG_PRESS;
                 sendKeyEvent(id, KEY_EVENT_LONG_HOLD);
             }
             break;
 
         case KEY_STATE_LONG_PRESS:
-            if (pin_state == GPIO_PIN_SET) { // 长按释放
+            if (pin_state == GPIO_PIN_SET) {
                 key->state = KEY_STATE_RELEASED;
                 sendKeyEvent(id, KEY_EVENT_LONG_RELEASE);
-            } else if (now - key->press_time > pdMS_TO_TICKS(200)) {
-                key->press_time = now; // 重置时间戳以支持连发
+            } else if (press_duration > pdMS_TO_TICKS(200)) {
+                key->press_time = now;
                 sendKeyEvent(id, KEY_EVENT_LONG_HOLD);
             }
             break;

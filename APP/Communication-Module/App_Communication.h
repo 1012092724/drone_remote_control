@@ -5,7 +5,7 @@
 #include "Int_Si24R1.h"
 #include "Com_Config.h"
 
-void App_Communication_Start(void);
+void App_Communication_Init(void);
 void App_Communication_SendJoyStickData(JoyStick_Struct *joyStick);
 ;
 

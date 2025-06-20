@@ -4,7 +4,7 @@
  * @description: 启动通讯模块
  * @return {*}
  */
-void App_Communication_Start(void)
+void App_Communication_Init(void)
 {
     /* 1. 等待自检通过 */
     debug_printfln("2.4G Module Checking");
@@ -63,7 +63,8 @@ void App_Communication_SendJoyStickData(JoyStick_Struct *joyStick)
     TX_BUFF[index++] = (checkSum >> 8);
     TX_BUFF[index++] = checkSum;
 
-    uint8_t r = Inf_Si24R1_TxPacket(TX_BUFF);
+    // uint8_t r =
+    Inf_Si24R1_TxPacket(TX_BUFF);
     // DEBUG打印
     // if (r == 0) {
     //     debug_printfln("Send Success : %d", checkSum);

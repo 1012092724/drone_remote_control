@@ -19,7 +19,7 @@ void Debug_Task(void *pvParameters);
 // 按键扫描任务
 #define Key_Scan_Task_NAME       "Key_Scan_Task"
 #define Key_Scan_Task_STACK_SIZE 64
-#define Key_Scan_Task_PRIORITY   3
+#define Key_Scan_Task_PRIORITY   2
 #define Key_Scan_Task_CYCLE      pdMS_TO_TICKS(10)
 TaskHandle_t Key_Scan_Task_Handle;
 void Key_Scan_Task(void *pvParameters);
@@ -27,7 +27,7 @@ void Key_Scan_Task(void *pvParameters);
 // 按键数据处理任务
 #define Key_Data_Process_Task_NAME       "Key_Data_Process_Task"
 #define Key_Data_Process_Task_STACK_SIZE 64
-#define Key_Data_Process_Task_PRIORITY   3
+#define Key_Data_Process_Task_PRIORITY   2
 #define Key_Data_Process_Task_CYCLE      pdMS_TO_TICKS(10)
 TaskHandle_t Key_Data_Process_Task_Handle;
 void Key_Data_Process_Task(void *pvParameters);
@@ -35,7 +35,7 @@ void Key_Data_Process_Task(void *pvParameters);
 // 摇杆数据处理任务
 #define JoyStick_Data_Process_Task_NAME       "JoyStick_Data_Process_Task"
 #define JoyStick_Data_Process_Task_STACK_SIZE 64
-#define JoyStick_Data_Process_Task_PRIORITY   3
+#define JoyStick_Data_Process_Task_PRIORITY   2
 #define JoyStick_Data_Process_Task_CYCLE      pdMS_TO_TICKS(10)
 TaskHandle_t JoyStick_Data_Process_Task_Handle;
 void JoyStick_Data_Process_Task(void *pvParameters);
@@ -44,7 +44,7 @@ void JoyStick_Data_Process_Task(void *pvParameters);
 #define Communication_Task_NAME       "Communication_Task"
 #define Communication_Task_STACK_SIZE 128
 #define Communication_Task_PRIORITY   3
-#define Communication_Task_CYCLE      pdMS_TO_TICKS(10)
+#define Communication_Task_CYCLE      pdMS_TO_TICKS(4)
 TaskHandle_t Communication_Task_Handle;
 void Communication_Task(void *pvParameters);
 
@@ -52,23 +52,21 @@ void APP_Sart_ALL_Task()
 {
     printf(">>>>>>>>>> Remote Control Start <<<<<<<<<<\n");
     // 2.4G模块初始化
-    App_Communication_Start();
+    App_Communication_Init();
     // 创建2.4G通讯任务
     xTaskCreate(Communication_Task, Communication_Task_NAME, Communication_Task_STACK_SIZE, NULL, Communication_Task_PRIORITY, &Communication_Task_Handle);
-    // 摇杆初始化
-    Int_JoyStick_Init();
-    // 按键初始化
-    Int_Key_Init();
-    // 创建电源任务
-    xTaskCreate(Power_Task, Power_Task_NAME, Power_Task_STACK_SIZE, NULL, Power_Task_PRIORITY, &Power_Task_Handle);
-    // 创建Debug任务
-    // xTaskCreate(Debug_Task, Debug_Task_NAME, Debug_Task_STACK_SIZE, NULL, Debug_Task_PRIORITY, &Debug_Task_Handle);
+    // 数据处理程序初始化 （包含摇杆和按键初始化）
+    App_DataProcess_Init();
+    // 创建按键数据处理任务
+    xTaskCreate(Key_Data_Process_Task, Key_Data_Process_Task_NAME, Key_Data_Process_Task_STACK_SIZE, NULL, Key_Data_Process_Task_PRIORITY, &Key_Data_Process_Task_Handle);
     // 创建按键扫描任务
     xTaskCreate(Key_Scan_Task, Key_Scan_Task_NAME, Key_Scan_Task_STACK_SIZE, NULL, Key_Scan_Task_PRIORITY, &Key_Scan_Task_Handle);
     // 创建摇杆数据处理任务
     xTaskCreate(JoyStick_Data_Process_Task, JoyStick_Data_Process_Task_NAME, JoyStick_Data_Process_Task_STACK_SIZE, NULL, JoyStick_Data_Process_Task_PRIORITY, &JoyStick_Data_Process_Task_Handle);
-    // 创建按键数据处理任务
-    xTaskCreate(Key_Data_Process_Task, Key_Data_Process_Task_NAME, Key_Data_Process_Task_STACK_SIZE, NULL, Key_Data_Process_Task_PRIORITY, &Key_Data_Process_Task_Handle);
+    // 创建电源任务
+    xTaskCreate(Power_Task, Power_Task_NAME, Power_Task_STACK_SIZE, NULL, Power_Task_PRIORITY, &Power_Task_Handle);
+    // 创建Debug任务
+    xTaskCreate(Debug_Task, Debug_Task_NAME, Debug_Task_STACK_SIZE, NULL, Debug_Task_PRIORITY, &Debug_Task_Handle);
     vTaskStartScheduler();
 }
 
@@ -77,7 +75,7 @@ void Power_Task(void *pvParameters)
 {
     debug_printfln("Power Task: Start!");
     TickType_t pxPreviousWakeTime = xTaskGetTickCount();
-    vTaskDelay(1500);
+    vTaskDelay(15000);
     while (1) {
         Int_IP5305T_Open();
         vTaskDelayUntil(&pxPreviousWakeTime, Power_Task_CYCLE);
@@ -90,7 +88,6 @@ void Debug_Task(void *pvParameters)
     vTaskDelay(1000);
     debug_printfln("Debug Task: Start!");
     TickType_t pxPreviousWakeTime = xTaskGetTickCount();
-    // KeyEvent keyevent;
     while (1) {
         // >>>>>>>>>>>>>>>>>>>>>>>>>> 打印摇杆数据 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         // printf("PIT:%d, ROL:%d, THR:%d, YAW:%d, FHP:%d, PD:%d \n",
@@ -112,8 +109,8 @@ void Debug_Task(void *pvParameters)
         //             break;
         //     }
         // }
-        // printf("PIT:%d, ROL:%d, THR:%d, YAW:%d, FHP:%d, PD:%d \n",
-        //        joyStick.PIT, joyStick.ROL, joyStick.THR, joyStick.YAW, joyStick.isFixHeightPoint, joyStick.isPowerDonw);
+        printf("PIT:%d, ROL:%d, THR:%d, YAW:%d, FHP:%d, PD:%d \n",
+               joyStick.PIT, joyStick.ROL, joyStick.THR, joyStick.YAW, joyStick.isFixHeightPoint, joyStick.isPowerDonw);
         vTaskDelayUntil(&pxPreviousWakeTime, Debug_Task_CYCLE);
     }
 }
@@ -136,6 +133,7 @@ void Key_Data_Process_Task(void *pvParameters)
     vTaskDelay(1000);
     debug_printfln("Key Data Process Task: Start!");
     TickType_t pxPreviousWakeTime = xTaskGetTickCount();
+    Int_Key_SetReceiverTask(xTaskGetCurrentTaskHandle());
     while (1) {
         App_DataProcess_KeyDataProcess();
         vTaskDelayUntil(&pxPreviousWakeTime, Key_Data_Process_Task_CYCLE);
