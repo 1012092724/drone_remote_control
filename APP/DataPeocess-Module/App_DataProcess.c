@@ -1,6 +1,8 @@
 #include "App_DataProcess.h"
 
 JoyStickBias_Struct JoyStickBias;
+RC_DATA rc_data;
+Joy_Status joy_status = Joy_LOCK; // 摇杆状态
 
 /* 均值滤波(滑动窗口) */
 #define MEAN_FILTER(filter, valuePointer)             \
@@ -10,89 +12,46 @@ JoyStickBias_Struct JoyStickBias;
     filter.index  = (filter.index + 1) % FILTER_SIZE; \
     *valuePointer = filter.sum / FILTER_SIZE
 
-/**
- * @description: 摇杆和按键数据处理模块启动
- * @return {*}
- */
-void App_DataProcess_Init(void)
-{
-    Int_JoyStick_Init();
-    Int_JoyStick_Scan();
-    debug_printfln("JoyStick Data Process Start!");
-}
-
-/**
- * @description: 摇杆极性数据处理
- * @return {*}
- */
-static void App_DataProcess_JoyStickDataPolarity(void)
-{
-    /* 摇杆的极性, 与我们的感知正好相反, 先修改极性 */
-    joyStick.THR = 1000 - joyStick.THR * 1000 / 4095;
-    joyStick.YAW = 1000 - joyStick.YAW * 1000 / 4095;
-    joyStick.PIT = 1000 - joyStick.PIT * 1000 / 4095;
-    joyStick.ROL = 1000 - joyStick.ROL * 1000 / 4095;
-}
-
-/**
- * @description: 考虑摇杆的读取的值的偏移
- * @return {*}
- */
-static void App_DataProcess_JoyStickDataWithBias(void)
-{
-    /* 为了防止出现负数, 对移除偏移量的摇杆数据进行限幅处理 */
-    joyStick.THR = LIMIT(joyStick.THR - JoyStickBias.THRBias, 0, 1000);
-    joyStick.YAW = LIMIT(joyStick.YAW - JoyStickBias.YAWBias, 0, 1000);
-    joyStick.PIT = LIMIT(joyStick.PIT - JoyStickBias.PITBias, 0, 1000);
-    joyStick.ROL = LIMIT(joyStick.ROL - JoyStickBias.ROLBias, 0, 1000);
-}
-
 /* 初始化滤波缓冲区 */
 static FilterBuffer_Struct THRFilter = {{0}, 0, 0};
 static FilterBuffer_Struct YAWFilter = {{0}, 0, 0};
 static FilterBuffer_Struct PITFilter = {{0}, 0, 0};
 static FilterBuffer_Struct ROLFilter = {{0}, 0, 0};
-/**
- * @description: 对摇杆4个方向数据进行滤波处理
- *              这次我们使用平均值滤波(滑动窗口滤波)
- *              取最近的10个值的平均值
- * @return {*}
- */
-static void App_DataProcess_JoyStickDataFilter(void)
-{
-    /*
-        // 1. 减去旧值
-        THRFilter.sum -= THRFilter.values[THRFilter.index];
-        // 2. 旧值的地方存储新值
-        THRFilter.values[THRFilter.index] = joyStick.THR;
-        // 3. 加上新值
-        THRFilter.sum += THRFilter.values[THRFilter.index];
-        // 4. 更新索引
-        THRFilter.index = (THRFilter.index + 1) % FILTER_SIZE;
-        //5. 计算均值
-        joyStick.THR = THRFilter.sum / FILTER_SIZE;
 
-        为了提高可读性,使用宏定义滤波算法
-    */
-    MEAN_FILTER(THRFilter, &joyStick.THR);
-    MEAN_FILTER(YAWFilter, &joyStick.YAW);
-    MEAN_FILTER(PITFilter, &joyStick.PIT);
-    MEAN_FILTER(ROLFilter, &joyStick.ROL);
-}
-
-/**
- * @description: 处理摇杆数据
- * @return {*}
- */
+// /**
+//  * @description: 处理摇杆数据
+//  * @return {*}
+//  */
 void App_DataProcess_JoyStickDataProcess(void)
 {
-    Int_JoyStick_Scan(); /* 扫描摇杆数据 */
 
-    App_DataProcess_JoyStickDataPolarity(); /* 对摇杆数据进行极性处理 */
+    // taskENTER_CRITICAL();
 
-    App_DataProcess_JoyStickDataWithBias(); /* 考虑摇杆的偏差 */
+    /* 对摇杆数据进行极性处理 */
+    uint16_t THR = 1000 - joystick.THR * 1000 / 4095;
+    uint16_t YAW = 1000 - joystick.YAW * 1000 / 4095;
+    uint16_t PIT = 1000 - joystick.PIT * 1000 / 4095;
+    uint16_t ROL = 1000 - joystick.ROL * 1000 / 4095;
 
-    App_DataProcess_JoyStickDataFilter(); /* 对摇杆数据进行滤波 */
+    /* 摇杆偏差处理 */
+    THR = LIMIT(THR - JoyStickBias.THRBias, 0, 1000);
+    YAW = LIMIT(YAW - JoyStickBias.YAWBias, 0, 1000);
+    PIT = LIMIT(PIT - JoyStickBias.PITBias, 0, 1000);
+    ROL = LIMIT(ROL - JoyStickBias.ROLBias, 0, 1000);
+
+    /* 对摇杆数据进行滤波 */
+    MEAN_FILTER(THRFilter, &THR);
+    MEAN_FILTER(YAWFilter, &YAW);
+    MEAN_FILTER(PITFilter, &PIT);
+    MEAN_FILTER(ROLFilter, &ROL);
+
+    /* 更新处理后摇杆数据到RC_DATA结构体中 */
+    rc_data.THR = THR;
+    rc_data.YAW = YAW;
+    rc_data.PIT = PIT;
+    rc_data.ROL = ROL;
+
+    // taskEXIT_CRITICAL();
 }
 
 /**
@@ -102,18 +61,25 @@ void App_DataProcess_JoyStickDataProcess(void)
  */
 static void App_DataProcess_JoyStickCalcBias()
 {
-    JoyStickBias.PITBias = 0;
-    JoyStickBias.ROLBias = 0;
+    JoyStickBias.THRBias = 0;
     JoyStickBias.YAWBias = 0;
+    JoyStickBias.PITBias = 0;
     JoyStickBias.ROLBias = 0;
     /* 连续读取100次, 求取平均偏移量 */
     for (uint8_t i = 0; i < 100; i++) {
-        Int_JoyStick_Scan();                    /* 扫描摇杆数据 */
-        App_DataProcess_JoyStickDataPolarity(); /* 对摇杆数据进行极性处理 */
-        JoyStickBias.THRBias += joyStick.THR - 0;
-        JoyStickBias.YAWBias += joyStick.YAW - 500;
-        JoyStickBias.PITBias += joyStick.PIT - 500;
-        JoyStickBias.ROLBias += joyStick.ROL - 500;
+        Int_JoyStick_Scan(); /* 扫描摇杆数据 */
+        /* 对摇杆数据进行极性处理 */
+        /* 摇杆的极性, 与我们的感知正好相反, 先修改极性 */
+
+        int16_t THR = 1000 - joystick.THR * 1000 / 4095;
+        int16_t YAW = 1000 - joystick.YAW * 1000 / 4095;
+        int16_t PIT = 1000 - joystick.PIT * 1000 / 4095;
+        int16_t ROL = 1000 - joystick.ROL * 1000 / 4095;
+
+        JoyStickBias.THRBias += THR - 0;
+        JoyStickBias.YAWBias += YAW - 500;
+        JoyStickBias.PITBias += PIT - 500;
+        JoyStickBias.ROLBias += ROL - 500;
     }
 
     JoyStickBias.THRBias /= 100;
@@ -128,32 +94,6 @@ static void App_DataProcess_JoyStickCalcBias()
  */
 void App_DataProcess_KeyDataProcess(void)
 {
-
-    /* 处理按键事件 */
-    /*
-    KEY EVENT
-        KEY_EVENT_NONE,          // 无事件
-        KEY_EVENT_DOWN,          // 按键按下（瞬时事件）
-        KEY_EVENT_SHORT_RELEASE, // 短按释放（<500ms）
-        KEY_EVENT_LONG_RELEASE,  // 长按释放（≥500ms）
-        KEY_EVENT_LONG_HOLD      // 长按持续（周期性触发）
-
-    KEY ID
-        KEY_ID_LEFT_X,
-        KEY_ID_RIGHT_X,
-        KEY_ID_UP,
-        KEY_ID_DOWN,
-        KEY_ID_LEFT,
-        KEY_ID_RIGHT,
-    */
-    /*
-     1. 如果是右上按键长按, 则进行校准
-         THR 拉到最低, 实现零值校准  0
-         其他由于会自动回中, 则进行中值校准  500
-     2. 右上按键按一下启动定高定点
-     3. 左上按键长按远程关闭飞控
-     4. 上下左右按键对摇杆进行微调
-  */
     // 设置任务接收句柄
     if (xReceiverTask == NULL) {
         Int_Key_SetReceiverTask(xTaskGetCurrentTaskHandle());
@@ -180,8 +120,6 @@ void App_DataProcess_KeyDataProcess(void)
                     break;
                 case KEY_ID_DOWN:
                     break;
-                default:
-                    break;
             }
             break;
         case KEY_EVENT_SHORT_RELEASE: // 短按释放事件 (<500ms)
@@ -189,7 +127,7 @@ void App_DataProcess_KeyDataProcess(void)
                 case KEY_ID_LEFT_X:
                     break;
                 case KEY_ID_RIGHT_X:
-                    joyStick.isFixHeightPoint = !joyStick.isFixHeightPoint; // 短按释放 右上按键 启动定高飞行
+                    rc_data.isFixHeightPoint = !rc_data.isFixHeightPoint; // 短按释放 右上按键 启动定高飞行
                     break;
                 case KEY_ID_LEFT:
                     JoyStickBias.YAWBias -= 1; // 短按释放 左按键 加偏航角
@@ -201,16 +139,25 @@ void App_DataProcess_KeyDataProcess(void)
                     JoyStickBias.PITBias -= 1; // 短按释放 上按键 加俯仰角
                     break;
                 case KEY_ID_DOWN:
-                    JoyStickBias.THRBias -= 1; // 短按释放 下按键 加油门
-                    break;
-                default:
                     break;
             }
             break;
         case KEY_EVENT_LONG_HOLD: // 长按持续事件 (周期性触发)
             switch (id) {
                 case KEY_ID_LEFT_X:
-                    joyStick.isPowerDonw = 1; // 持续长按 左上按键 远程关闭飞控
+                    App_DataProcess_JoyStickCalcBias();
+                    rc_data.isUnlockFlight = 1; // 持续长按 左上按键 远程解锁飞机
+                    // 如果 该按键被按下 并且 rc_status == RC_CONNECTED 并且 joy_status == Joy_LOCK 持续 1.5s 则 joy_status == Joy_UNLOCK
+                    static uint32_t hold_time = 0;
+                    if (rc_status == RC_CONNECTED && joy_status == Joy_LOCK && joystick.THR >= 4074) {
+                        if (hold_time == 0) {
+                            hold_time = xTaskGetTickCount();
+                        } else if (xTaskGetTickCount() - hold_time > 1500) {
+                            joy_status = Joy_UNLOCK;
+                        }
+                    } else {
+                        hold_time = 0; // 重置计时器
+                    }
                     break;
                 case KEY_ID_RIGHT_X:
                     break;
@@ -224,16 +171,14 @@ void App_DataProcess_KeyDataProcess(void)
                     JoyStickBias.PITBias += 1; // 持续长按 上按键 减俯仰角
                     break;
                 case KEY_ID_DOWN:
-                    JoyStickBias.THRBias += 1; // 持续长按 下按键 减油门
-                    break;
-                default:
+                    rc_data.isPowerDonw = 1; // 持续长按 下按键 远程关闭飞控
                     break;
             }
             break;
         case KEY_EVENT_LONG_RELEASE: // 长按释放事件 (≥500ms)
             switch (id) {
                 case KEY_ID_LEFT_X:
-                    joyStick.isPowerDonw = 0; // 长按释放 左上按键 恢复关闭飞控命令初始值
+                    rc_data.isUnlockFlight = 0; // 长按释放 左上按键 锁定飞机
                     break;
                 case KEY_ID_RIGHT_X:
                     App_DataProcess_JoyStickCalcBias(); // 长按释放 右上按键 进行校准
@@ -245,12 +190,9 @@ void App_DataProcess_KeyDataProcess(void)
                 case KEY_ID_UP:
                     break;
                 case KEY_ID_DOWN:
-                    break;
-                default:
+                    rc_data.isPowerDonw = 0;
                     break;
             }
-            break;
-        default:
             break;
     }
 }

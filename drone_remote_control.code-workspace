@@ -19,7 +19,9 @@
             "*.cpp": "cpp",
             "*.cxx": "cpp",
             "*.cc": "cpp",
-            "STC15Fxxxx.H": "cpp"
+            "STC15Fxxxx.H": "cpp",
+            "APP_Display.C": "cpp",
+            "APP_Display copy.C": "cpp"
         },
         "[yaml]": {
             "editor.insertSpaces": true,
@@ -45,9 +47,6 @@
     },
     "launch": {
         "version": "0.2.0",
-        "configurations": [
-            
-
-        ]
+        "configurations": []
     }
 }

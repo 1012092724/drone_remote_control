@@ -24,6 +24,14 @@ void Debug_Task(void *pvParameters);
 TaskHandle_t Key_Scan_Task_Handle;
 void Key_Scan_Task(void *pvParameters);
 
+// 摇杆扫描任务
+#define JoyStick_Scan_Task_NAME       "JoyStick_Scan_Task"
+#define JoyStick_Scan_Task_STACK_SIZE 64
+#define JoyStick_Scan_Task_PRIORITY   2
+#define JoyStick_Scan_Task_CYCLE      pdMS_TO_TICKS(10)
+TaskHandle_t JoyStick_Scan_Task_Handle;
+void JoyStick_Scan_Task(void *pvParameters);
+
 // 按键数据处理任务
 #define Key_Data_Process_Task_NAME       "Key_Data_Process_Task"
 #define Key_Data_Process_Task_STACK_SIZE 64
@@ -48,25 +56,40 @@ void JoyStick_Data_Process_Task(void *pvParameters);
 TaskHandle_t Communication_Task_Handle;
 void Communication_Task(void *pvParameters);
 
+// Display任务
+#define Display_Task_NAME       "Display_Task"
+#define Display_Task_STACK_SIZE 128
+#define Display_Task_PRIORITY   2
+#define Display_Task_CYCLE      pdMS_TO_TICKS(10)
+TaskHandle_t Display_Task_Handle;
+void Display_Task(void *pvParameters);
+
 void APP_Sart_ALL_Task()
 {
-    printf(">>>>>>>>>> Remote Control Start <<<<<<<<<<\n");
-    // 2.4G模块初始化
+    // printf(">>>>>>>>>> Remote Control Start <<<<<<<<<<\n");
+    // Display 初始化
+    App_Display_Start();
+    // 2.4G模块 初始化
     App_Communication_Init();
-    // 创建2.4G通讯任务
-    xTaskCreate(Communication_Task, Communication_Task_NAME, Communication_Task_STACK_SIZE, NULL, Communication_Task_PRIORITY, &Communication_Task_Handle);
-    // 数据处理程序初始化 （包含摇杆和按键初始化）
-    App_DataProcess_Init();
-    // 创建按键数据处理任务
-    xTaskCreate(Key_Data_Process_Task, Key_Data_Process_Task_NAME, Key_Data_Process_Task_STACK_SIZE, NULL, Key_Data_Process_Task_PRIORITY, &Key_Data_Process_Task_Handle);
-    // 创建按键扫描任务
+    // 摇杆 初始化
+    App_JoyStick_Init();
+    // 创建 Display任务
+    xTaskCreate(Display_Task, Display_Task_NAME, Display_Task_STACK_SIZE, NULL, Display_Task_PRIORITY, &Display_Task_Handle);
+    // 创建 按键扫描任务
     xTaskCreate(Key_Scan_Task, Key_Scan_Task_NAME, Key_Scan_Task_STACK_SIZE, NULL, Key_Scan_Task_PRIORITY, &Key_Scan_Task_Handle);
-    // 创建摇杆数据处理任务
+    // 创建 按键数据处理任务
+    xTaskCreate(Key_Data_Process_Task, Key_Data_Process_Task_NAME, Key_Data_Process_Task_STACK_SIZE, NULL, Key_Data_Process_Task_PRIORITY, &Key_Data_Process_Task_Handle);
+    // 创建 摇杆扫描任务
+    xTaskCreate(JoyStick_Scan_Task, JoyStick_Scan_Task_NAME, JoyStick_Scan_Task_STACK_SIZE, NULL, JoyStick_Scan_Task_PRIORITY, &JoyStick_Scan_Task_Handle);
+    // 创建 摇杆数据处理任务
     xTaskCreate(JoyStick_Data_Process_Task, JoyStick_Data_Process_Task_NAME, JoyStick_Data_Process_Task_STACK_SIZE, NULL, JoyStick_Data_Process_Task_PRIORITY, &JoyStick_Data_Process_Task_Handle);
-    // 创建电源任务
+    // 创建 电源任务
     xTaskCreate(Power_Task, Power_Task_NAME, Power_Task_STACK_SIZE, NULL, Power_Task_PRIORITY, &Power_Task_Handle);
-    // 创建Debug任务
-    xTaskCreate(Debug_Task, Debug_Task_NAME, Debug_Task_STACK_SIZE, NULL, Debug_Task_PRIORITY, &Debug_Task_Handle);
+    // 创建 Debug任务
+    // xTaskCreate(Debug_Task, Debug_Task_NAME, Debug_Task_STACK_SIZE, NULL, Debug_Task_PRIORITY, &Debug_Task_Handle);
+    // 创建 2.4G通讯任务
+    xTaskCreate(Communication_Task, Communication_Task_NAME, Communication_Task_STACK_SIZE, NULL, Communication_Task_PRIORITY, &Communication_Task_Handle);
+    // 启动调度器
     vTaskStartScheduler();
 }
 
@@ -77,7 +100,7 @@ void Power_Task(void *pvParameters)
     TickType_t pxPreviousWakeTime = xTaskGetTickCount();
     vTaskDelay(15000);
     while (1) {
-        Int_IP5305T_Open();
+        APP_Power_Open();
         vTaskDelayUntil(&pxPreviousWakeTime, Power_Task_CYCLE);
     }
 }
@@ -91,7 +114,7 @@ void Debug_Task(void *pvParameters)
     while (1) {
         // >>>>>>>>>>>>>>>>>>>>>>>>>> 打印摇杆数据 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         // printf("PIT:%d, ROL:%d, THR:%d, YAW:%d, FHP:%d, PD:%d \n",
-        //        joyStick.PIT, joyStick.ROL, joyStick.THR, joyStick.YAW, joyStick.isFixHeightPoint, joyStick.isPowerDonw);
+        //        JoyStick.PIT, JoyStick.ROL, JoyStick.THR, JoyStick.YAW, JoyStick.isFixHeightPoint, JoyStick.isPowerDonw);
         // >>>>>>>>>>>>>>>>>>>>>>>>>> 打印按键数据 < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < <
         // if (xQueueReceive(xKeyEventQueue, &keyevent, portMAX_DELAY) == pdPASS) {
         //     switch (keyevent.event) {
@@ -109,8 +132,10 @@ void Debug_Task(void *pvParameters)
         //             break;
         //     }
         // }
-        printf("PIT:%d, ROL:%d, THR:%d, YAW:%d, FHP:%d, PD:%d \n",
-               joyStick.PIT, joyStick.ROL, joyStick.THR, joyStick.YAW, joyStick.isFixHeightPoint, joyStick.isPowerDonw);
+        // printf("THR:%d, PIT:%d, ROL:%d,  YAW:%d, FHP:%d, PD:%d, Unlock:%d\n",
+        //        rc_data.THR, rc_data.PIT, rc_data.ROL, rc_data.YAW, rc_data.isFixHeightPoint, rc_data.isPowerDonw, rc_data.isUnlockFlight);
+        // 打印摇杆原始数据
+
         vTaskDelayUntil(&pxPreviousWakeTime, Debug_Task_CYCLE);
     }
 }
@@ -122,8 +147,19 @@ void Key_Scan_Task(void *pvParameters)
     debug_printfln("Key Scan Task: Start!");
     TickType_t pxPreviousWakeTime = xTaskGetTickCount();
     while (1) {
-        Int_Key_Scan();
+        APP_Key_Scan();
         vTaskDelayUntil(&pxPreviousWakeTime, Key_Scan_Task_CYCLE);
+    }
+}
+// 摇杆扫描任务
+void JoyStick_Scan_Task(void *pvParameters)
+{
+    vTaskDelay(1000);
+    debug_printfln("JoyStick Scan Task: Start!");
+    TickType_t pxPreviousWakeTime = xTaskGetTickCount();
+    while (1) {
+        APP_JoyStick_Scan();
+        vTaskDelayUntil(&pxPreviousWakeTime, JoyStick_Scan_Task_CYCLE);
     }
 }
 
@@ -133,7 +169,6 @@ void Key_Data_Process_Task(void *pvParameters)
     vTaskDelay(1000);
     debug_printfln("Key Data Process Task: Start!");
     TickType_t pxPreviousWakeTime = xTaskGetTickCount();
-    Int_Key_SetReceiverTask(xTaskGetCurrentTaskHandle());
     while (1) {
         App_DataProcess_KeyDataProcess();
         vTaskDelayUntil(&pxPreviousWakeTime, Key_Data_Process_Task_CYCLE);
@@ -159,11 +194,19 @@ void Communication_Task(void *pvParameters)
     debug_printfln("Communication Task: Start!");
     TickType_t pxPreviousWakeTime = xTaskGetTickCount();
     while (1) {
+        App_Communication_SendJoyStickData(&rc_data);
+        vTaskDelayUntil(&pxPreviousWakeTime, Communication_Task_CYCLE);
+    }
+}
 
-        taskENTER_CRITICAL();
-        App_Communication_SendJoyStickData(&joyStick);
-        taskEXIT_CRITICAL();
-
-        xTaskDelayUntil(&pxPreviousWakeTime, Communication_Task_CYCLE);
+// Display 任务
+void Display_Task(void *pvParameters)
+{
+    vTaskDelay(1000);
+    debug_printfln("Display Task: Start!");
+    TickType_t pxPreviousWakeTime = xTaskGetTickCount();
+    while (1) {
+        App_Display_Show();
+        vTaskDelayUntil(&pxPreviousWakeTime, Display_Task_CYCLE);
     }
 }

@@ -2,12 +2,13 @@
 #define __APP_RC_TASK_H__
 
 #include "main.h"
-#include "Int_IP5305T.h"
-#include "Int_key.h"
 #include "Com_Config.h"
-#include "Int_Joystick.h"
+#include "APP_Joystick.h"
+#include "APP_Power.h"
+#include "APP_key.h"
 #include "App_DataProcess.h"
 #include "App_Communication.h"
+#include "APP_Display.h"
 
 void APP_Sart_ALL_Task(void);
 

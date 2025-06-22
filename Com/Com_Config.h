@@ -16,6 +16,18 @@ typedef enum {
     Com_OTHER
 } Com_Status;
 
+/* 遥控器状态 */
+typedef enum {
+    RC_UNCONNECTED,
+    RC_CONNECTED
+} RC_Status;
+
+/* 摇杆状态 */
+typedef enum {
+    Joy_LOCK,
+    Joy_UNLOCK
+} Joy_Status;
+
 /* 2. 遥感和按键数据封装结构体  */
 typedef struct
 {
@@ -26,7 +38,8 @@ typedef struct
 
     uint8_t isFixHeightPoint; /* 是否定高定点 */
     uint8_t isPowerDonw;      /* 是否关机 */
-} JoyStick_Struct;
+    uint8_t isUnlockFlight;   /* 是否解锁飞机*/
+} RC_DATA;
 
 typedef struct
 {
@@ -36,6 +49,8 @@ typedef struct
     int16_t PITBias; /* 俯仰 偏差*/
 } JoyStickBias_Struct;
 
-extern JoyStick_Struct joyStick;
+extern RC_DATA rc_data;       // 遥控数据
+extern RC_Status rc_status;   // 遥控连接状态
+extern Joy_Status joy_status; // 摇杆状态
 
 #endif /* __COM_CONFIG_H__ */

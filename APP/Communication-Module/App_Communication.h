@@ -6,7 +6,6 @@
 #include "Com_Config.h"
 
 void App_Communication_Init(void);
-void App_Communication_SendJoyStickData(JoyStick_Struct *joyStick);
-;
+void App_Communication_SendJoyStickData(RC_DATA *rc_data);
 
 #endif /* __APP_COMMUNICATION_H__ */

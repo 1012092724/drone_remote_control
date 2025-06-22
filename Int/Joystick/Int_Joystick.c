@@ -6,8 +6,11 @@
     2: right杆->  左右 -> 横滚
     3: right杆->  前后 -> 俯仰
  */
+
+JoyStick_Struct joystick; // 原始摇杆数据
+
 uint16_t joyStickBuff[4];
-JoyStick_Struct joyStick;
+
 /**
  * @description: 摇杆和按键初始化
  * @return {*}
@@ -25,8 +28,10 @@ void Int_JoyStick_Init(void)
  */
 void Int_JoyStick_Scan(void)
 {
-    joyStick.THR = joyStickBuff[0];
-    joyStick.YAW = joyStickBuff[1];
-    joyStick.PIT = joyStickBuff[2];
-    joyStick.ROL = joyStickBuff[3];
+    joystick.THR = joyStickBuff[0];
+    joystick.YAW = joyStickBuff[1];
+    joystick.PIT = joyStickBuff[2];
+    joystick.ROL = joyStickBuff[3]; // 4074
+    // 打印遥感数据
+    // debug_printfln("JoyStick: THR:%d, YAW:%d, PIT:%d, ROL:%d", joystick.THR, joystick.YAW, joystick.PIT, joystick.ROL);
 }

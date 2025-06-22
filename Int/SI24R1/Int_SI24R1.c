@@ -6,17 +6,10 @@ uint8_t RX_ADDRESS[RX_ADR_WIDTH] = {0x20, 0x02, 0x02, 0x26, 0x0A}; // 定义一�
 uint8_t TX_BUFF[TX_PLOAD_WIDTH];
 uint8_t RX_BUFF[RX_PLOAD_WIDTH];
 
-/* 标志位：如果收到数据，就置0；其他地方会不断对其++ */
-uint16_t connect_flag = 1; // 默认给一个大于0的数
-
 uint8_t Driver_SPI_SwapByte(uint8_t data)
 {
     uint8_t rx_data;
     HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(&hspi1, &data, &rx_data, 1, HAL_MAX_DELAY);
-    // if (status != HAL_OK) {
-    //     return 0xFF; // 返回错误值
-    // }
-
     return rx_data;
 }
 /**
@@ -126,6 +119,8 @@ void Inf_Si24R1_TXMode(void)
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + RF_CH, CH);                            // 选择射频通道0x40
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + RF_SETUP, 0x0f);                       // 数据传输率2Mbps，发射功率7dBm
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + CONFIG, 0x0e);                         // CRC使能，16位CRC校验，上电
+    Inf_Si24R1_WriteReg(SPI_WRITE_REG + STATUS, 0xff);                         // 清除所有的中断标志位
+    Inf_Si24R1_WriteReg(FLUSH_TX, 0xff);                                       // 清除TX FIFO
     /* 3、使能CE */
     SI24R1_EN_H;
 }
@@ -143,13 +138,17 @@ void Inf_Si24R1_RXMode(void)
             2、需要设置接收通道0的负载长度
             3、config配置的，bit0=1 为接收模式
      */
+    // ***** SI24R1 硬件BUG FIFO满时 状态寄存器将错误置为0
     Inf_Si24R1_WriteBuf(SPI_WRITE_REG + RX_ADDR_P0, RX_ADDRESS, RX_ADR_WIDTH); // 接收设备接收通道0使用和发送设备相同的发送地址
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + EN_AA, 0x01);                          // 使能接收通道0自动应答
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + EN_RXADDR, 0x01);                      // 使能接收通道0
-    Inf_Si24R1_WriteReg(SPI_WRITE_REG + RF_CH, CH);                            // 选择射频通道0x40
+    Inf_Si24R1_WriteReg(SPI_WRITE_REG + RF_CH, CH);                            // 选择射频通道
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + RX_PW_P0, TX_PLOAD_WIDTH);             // 接收通道0选择和发送通道相同有效数据宽度
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + RF_SETUP, 0x0f);                       // 数据传输率2Mbps，发射功率7dBm
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + CONFIG, 0x0f);                         // CRC使能，16位CRC校验，上电，接收模式
+    Inf_Si24R1_WriteReg(SPI_WRITE_REG + STATUS, 0xff);                         // 清除所有的中断标志位
+                                                                               // SI24R1 硬件BUG FIFO满时 状态寄存器将错误置为0
+    Inf_Si24R1_WriteReg(FLUSH_RX, 0xff);                                       // 为了解决硬件BUG 清空接收FIFO
     SI24R1_EN_H;                                                               // 拉高CE启动接收设备
 }
 
@@ -167,19 +166,21 @@ uint8_t Inf_Si24R1_TxPacket(uint8_t *txBuf)
     SI24R1_EN_H; // 确保进入发射模式
 
     /* 2、判断发送完成（或达到最大重发次数）：循环读取状态寄存器，并判断bit4、bit5 */
-    while (!(state & (TX_OK | MAX_TX))) {
-        state = Inf_Si24R1_ReadReg(SPI_READ_REG + STATUS);
-    }
-
+    // while (!(state & (TX_OK | MAX_TX))) {
+    state = Inf_Si24R1_ReadReg(SPI_READ_REG + STATUS);
+    //}
+    // printf("TX_STATUS: 0x%02X \r", state);
     /* 3、 清空 接收或最大重发次数 中断标志位 */
     Inf_Si24R1_WriteReg(SPI_WRITE_REG + STATUS, state);
 
     /* 4、达到最大重发次数，就要主动清除Tx FIFO，否则无法继续发送 */
     if (state & MAX_TX) {
-        if (state & 0x01) // bit0: 如果TX FIFO满了，=1，没满=0
-        {
-            Inf_Si24R1_WriteReg(FLUSH_TX, 0xff);
-        }
+        // printf("MAX_TX:%d \r", (state & MAX_TX));
+        // if (state & 0x01) // bit0: 如果TX FIFO满了，=1，没满=0
+        //{
+        // printf("TX_FIFO_FULL:%d \r\n", (state & 0x01));
+        Inf_Si24R1_WriteReg(FLUSH_TX, 0xff);
+        //}
     }
 
     /* 5、如果是发送成功 */
@@ -206,12 +207,12 @@ uint8_t Inf_Si24R1_RxPacket(uint8_t *rxBuf)
 
     /* 3、如果收到数据了，就开始读 RX FIFO */
     if (state & RX_OK) {
+        // if ((Inf_Si24R1_ReadReg(SPI_READ_REG + FIFO_STATUS) & 0x01) == 0) { // FIFO状态寄存器的bit0=1，表示RX FIFO不为空
+
         /* 2.1 从 RX FIFO读取数据到 buff 里 */
         Inf_Si24R1_ReadBuf(RD_RX_PLOAD, rxBuf, RX_PLOAD_WIDTH);
-        /* 2.2 清空 RX FIFO */
+        /* 2.2 清空 RX FIFO */ // 保证数据时效性
         Inf_Si24R1_WriteReg(FLUSH_RX, 0xff);
-        /* 2.3 接收到数据后，对标志位置0 */
-        connect_flag = 0;
 
         /* =============测试：打印接收的数据================= */
         // for (uint8_t i = 0; i < RX_PLOAD_WIDTH; i++)

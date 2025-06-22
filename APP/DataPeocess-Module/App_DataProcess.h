@@ -19,8 +19,6 @@ typedef struct
     int32_t sum;        /* 存储10个值的和 */
 } FilterBuffer_Struct;
 
-void App_DataProcess_Init(void);
-
 void App_DataProcess_JoyStickDataProcess(void);
 
 void App_DataProcess_KeyDataProcess(void);
