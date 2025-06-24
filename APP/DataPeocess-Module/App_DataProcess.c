@@ -146,7 +146,6 @@ void App_DataProcess_KeyDataProcess(void)
             switch (id) {
                 case KEY_ID_LEFT_X:
                     App_DataProcess_JoyStickCalcBias();
-                    rc_data.isUnlockFlight = 1; // 持续长按 左上按键 远程解锁飞机
                     // 如果 该按键被按下 并且 rc_status == RC_CONNECTED 并且 joy_status == Joy_LOCK 持续 1.5s 则 joy_status == Joy_UNLOCK
                     static uint32_t hold_time = 0;
                     if (rc_status == RC_CONNECTED && joy_status == Joy_LOCK && joystick.THR >= 4074) {
@@ -158,6 +157,7 @@ void App_DataProcess_KeyDataProcess(void)
                     } else {
                         hold_time = 0; // 重置计时器
                     }
+                    rc_data.isUnlockFlight = 1; // 持续长按 左上按键 远程解锁飞机
                     break;
                 case KEY_ID_RIGHT_X:
                     break;

@@ -36,14 +36,25 @@ void App_Communication_SendJoyStickData(RC_DATA *rc_data)
     TX_BUFF[index++] = FRAME_1;
     TX_BUFF[index++] = FRAME_2;
     TX_BUFF[index++] = 0x00; /* 存储有效数据字节数 */
-    TX_BUFF[index++] = (rc_data->THR >> 8);
-    TX_BUFF[index++] = (rc_data->THR & 0xff);
-    TX_BUFF[index++] = (rc_data->YAW >> 8);
-    TX_BUFF[index++] = (rc_data->YAW & 0xff);
-    TX_BUFF[index++] = (rc_data->ROL >> 8);
-    TX_BUFF[index++] = (rc_data->ROL & 0xff);
-    TX_BUFF[index++] = (rc_data->PIT >> 8);
-    TX_BUFF[index++] = (rc_data->PIT & 0xff);
+    if (joy_status == Joy_UNLOCK) {
+        TX_BUFF[index++] = (rc_data->THR >> 8);
+        TX_BUFF[index++] = (rc_data->THR & 0xff);
+        TX_BUFF[index++] = (rc_data->YAW >> 8);
+        TX_BUFF[index++] = (rc_data->YAW & 0xff);
+        TX_BUFF[index++] = (rc_data->ROL >> 8);
+        TX_BUFF[index++] = (rc_data->ROL & 0xff);
+        TX_BUFF[index++] = (rc_data->PIT >> 8);
+        TX_BUFF[index++] = (rc_data->PIT & 0xff);
+    } else {
+        TX_BUFF[index++] = 0;
+        TX_BUFF[index++] = 0;
+        TX_BUFF[index++] = 0;
+        TX_BUFF[index++] = 0;
+        TX_BUFF[index++] = 0;
+        TX_BUFF[index++] = 0;
+        TX_BUFF[index++] = 0;
+        TX_BUFF[index++] = 0;
+    }
 
     TX_BUFF[index++] = rc_data->isFixHeightPoint; /* 定高定点命令0:不定高定点 1:定高定点 */
     TX_BUFF[index++] = rc_data->isPowerDonw;      /* 关机命令0:不关机 1:关机 */

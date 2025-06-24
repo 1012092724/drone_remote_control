@@ -52,7 +52,7 @@ void JoyStick_Data_Process_Task(void *pvParameters);
 #define Communication_Task_NAME       "Communication_Task"
 #define Communication_Task_STACK_SIZE 128
 #define Communication_Task_PRIORITY   3
-#define Communication_Task_CYCLE      pdMS_TO_TICKS(4)
+#define Communication_Task_CYCLE      pdMS_TO_TICKS(5)
 TaskHandle_t Communication_Task_Handle;
 void Communication_Task(void *pvParameters);
 

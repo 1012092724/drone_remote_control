@@ -84,37 +84,37 @@ NVIC value of 255. */
 #define xPortPendSVHandler                      PendSV_Handler
 #define xPortSysTickHandler                     SysTick_Handler
 
-// 获取调度器运行状态
-#define INCLUDE_xTaskGetSchedulerState 1
-// 静态创建任务
-#define configSUPPORT_STATIC_ALLOCATION 0
+// // 获取调度器运行状态
+// #define INCLUDE_xTaskGetSchedulerState 1
+// // 静态创建任务
+// #define configSUPPORT_STATIC_ALLOCATION 0
 
-// 任务栈历史最小剩余空间
-#define INCLUDE_uxTaskGetStackHighWaterMark 1
-// 获取任务状态
-#define INCLUDE_eTaskGetState 1
+// // 任务栈历史最小剩余空间
+// #define INCLUDE_uxTaskGetStackHighWaterMark 1
+// // 获取任务状态
+// #define INCLUDE_eTaskGetState 1
 
-// 运行统计时间
-// extern uint32_t runtime_tick;
-// #define configGENERATE_RUN_TIME_STATS            1
-// #define configUSE_STATS_FORMATTING_FUNCTIONS     1
-// #define configUSE_TRACE_FACILITY                 1
-// #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() HAL_TIM_Base_Start_IT(&htim6)
-// #define portGET_RUN_TIME_COUNTER_VALUE()         runtime_tick
+// // 运行统计时间
+// // extern uint32_t runtime_tick;
+// // #define configGENERATE_RUN_TIME_STATS            1
+// // #define configUSE_STATS_FORMATTING_FUNCTIONS     1
+// // #define configUSE_TRACE_FACILITY                 1
+// // #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() HAL_TIM_Base_Start_IT(&htim6)
+// // #define portGET_RUN_TIME_COUNTER_VALUE()         runtime_tick
 
-// 计数型信号量
-#define configUSE_COUNTING_SEMAPHORES 1
-// 互斥信号量
-#define configUSE_MUTEXES 1
+// // 计数型信号量
+// #define configUSE_COUNTING_SEMAPHORES 1
+// // 互斥信号量
+// #define configUSE_MUTEXES 1
 
-// 队列集
-#define configUSE_QUEUE_SETS 1
+// // 队列集
+// #define configUSE_QUEUE_SETS 1
 
-// 软件定时器
-#define configUSE_TIMERS                 1
-#define configSUPPORT_DYNAMIC_ALLOCATION 1
-#define configTIMER_TASK_PRIORITY        4
-#define configTIMER_QUEUE_LENGTH         10
-#define configTIMER_TASK_STACK_DEPTH     128
+// // 软件定时器
+// #define configUSE_TIMERS                 1
+// #define configSUPPORT_DYNAMIC_ALLOCATION 1
+// #define configTIMER_TASK_PRIORITY        4
+// #define configTIMER_QUEUE_LENGTH         10
+// #define configTIMER_TASK_STACK_DEPTH     128
 
 #endif /* FREERTOS_CONFIG_H */
