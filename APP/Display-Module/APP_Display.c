@@ -13,7 +13,7 @@ void App_Display_Start(void)
 }
 
 // 宏定义用于提升可读性和可维护性
-#define REFRESH_INTERVAL_MS  pdMS_TO_TICKS(1500)
+#define REFRESH_INTERVAL_MS  pdMS_TO_TICKS(1000)
 #define RC_DATA_SCALE_FACTOR 41
 #define RC_DATA_OFFSET       500
 
@@ -61,7 +61,7 @@ void App_Display_Show(void)
                     OLED_Clear(); // 清屏
                     isBlinkOn = 0;
                 } else {
-                    OLED_ShowString(5 , 30, "JoyStick Locked", 12, 1);
+                    OLED_ShowString(5, 30, "JoyStick Locked", 12, 1);
                     isBlinkOn = 1;
                 }
             }
