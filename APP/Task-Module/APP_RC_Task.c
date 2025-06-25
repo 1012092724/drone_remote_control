@@ -2,7 +2,7 @@
 
 // Power Task
 #define Power_Task_NAME       "Power_Task"
-#define Power_Task_STACK_SIZE 64
+#define Power_Task_STACK_SIZE 128
 #define Power_Task_PRIORITY   4
 #define Power_Task_CYCLE      pdMS_TO_TICKS(2000)
 TaskHandle_t Power_Task_Handle;
@@ -10,7 +10,7 @@ void Power_Task(void *pvParameters);
 
 // Debug Task
 #define Debug_Task_NAME       "Debug_Task"
-#define Debug_Task_STACK_SIZE 64
+#define Debug_Task_STACK_SIZE 256
 #define Debug_Task_PRIORITY   4
 #define Debug_Task_CYCLE      pdMS_TO_TICKS(100)
 TaskHandle_t Debug_Task_Handle;
@@ -18,7 +18,7 @@ void Debug_Task(void *pvParameters);
 
 // 按键扫描任务
 #define Key_Scan_Task_NAME       "Key_Scan_Task"
-#define Key_Scan_Task_STACK_SIZE 64
+#define Key_Scan_Task_STACK_SIZE 128
 #define Key_Scan_Task_PRIORITY   2
 #define Key_Scan_Task_CYCLE      pdMS_TO_TICKS(10)
 TaskHandle_t Key_Scan_Task_Handle;
@@ -26,7 +26,7 @@ void Key_Scan_Task(void *pvParameters);
 
 // 摇杆扫描任务
 #define JoyStick_Scan_Task_NAME       "JoyStick_Scan_Task"
-#define JoyStick_Scan_Task_STACK_SIZE 64
+#define JoyStick_Scan_Task_STACK_SIZE 128
 #define JoyStick_Scan_Task_PRIORITY   2
 #define JoyStick_Scan_Task_CYCLE      pdMS_TO_TICKS(10)
 TaskHandle_t JoyStick_Scan_Task_Handle;
@@ -34,7 +34,7 @@ void JoyStick_Scan_Task(void *pvParameters);
 
 // 按键数据处理任务
 #define Key_Data_Process_Task_NAME       "Key_Data_Process_Task"
-#define Key_Data_Process_Task_STACK_SIZE 64
+#define Key_Data_Process_Task_STACK_SIZE 128
 #define Key_Data_Process_Task_PRIORITY   2
 #define Key_Data_Process_Task_CYCLE      pdMS_TO_TICKS(10)
 TaskHandle_t Key_Data_Process_Task_Handle;
@@ -42,7 +42,7 @@ void Key_Data_Process_Task(void *pvParameters);
 
 // 摇杆数据处理任务
 #define JoyStick_Data_Process_Task_NAME       "JoyStick_Data_Process_Task"
-#define JoyStick_Data_Process_Task_STACK_SIZE 64
+#define JoyStick_Data_Process_Task_STACK_SIZE 128
 #define JoyStick_Data_Process_Task_PRIORITY   2
 #define JoyStick_Data_Process_Task_CYCLE      pdMS_TO_TICKS(10)
 TaskHandle_t JoyStick_Data_Process_Task_Handle;
@@ -50,7 +50,7 @@ void JoyStick_Data_Process_Task(void *pvParameters);
 
 // 通讯任务
 #define Communication_Task_NAME       "Communication_Task"
-#define Communication_Task_STACK_SIZE 128
+#define Communication_Task_STACK_SIZE 256
 #define Communication_Task_PRIORITY   3
 #define Communication_Task_CYCLE      pdMS_TO_TICKS(5)
 TaskHandle_t Communication_Task_Handle;
