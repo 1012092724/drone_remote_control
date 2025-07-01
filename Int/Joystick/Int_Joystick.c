@@ -29,9 +29,9 @@ void Int_JoyStick_Init(void)
 void Int_JoyStick_Scan(void)
 {
     joystick.THR = joyStickBuff[0];
-    joystick.YAW = joyStickBuff[1];
-    joystick.PIT = joyStickBuff[2];
-    joystick.ROL = joyStickBuff[3]; // 4074
+    joystick.PIT = joyStickBuff[1];
+    joystick.ROL = joyStickBuff[2];
+    joystick.YAW = joyStickBuff[3]; // 4074
     // 打印遥感数据
     // debug_printfln("JoyStick: THR:%d, YAW:%d, PIT:%d, ROL:%d", joystick.THR, joystick.YAW, joystick.PIT, joystick.ROL);
 }
